@@ -1,0 +1,492 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#111318">
+  <meta name="description" content="YouTubeの動画を検索して視聴できる、個人向け動画検索サイトです。">
+  <title>Clipbox — 動画を探す</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #111318;
+      --surface: #191d25;
+      --surface-2: #202632;
+      --line: #303846;
+      --text: #f3f5f8;
+      --muted: #aab3c1;
+      --accent: #9cc4ff;
+      --accent-strong: #4d8df5;
+      --danger: #ff9a9a;
+      --radius: 18px;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: radial-gradient(ellipse at top, #202938 0, var(--bg) 42rem);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans JP", sans-serif;
+      line-height: 1.55;
+    }
+    button, input { font: inherit; }
+    button { cursor: pointer; }
+    a { color: var(--accent); }
+    .shell { width: min(1120px, calc(100% - 28px)); margin: 0 auto; }
+    header {
+      position: sticky; top: 0; z-index: 5;
+      backdrop-filter: blur(18px);
+      background: rgba(17,19,24,.88);
+      border-bottom: 1px solid rgba(255,255,255,.08);
+    }
+    .topbar { min-height: 68px; display: flex; align-items: center; gap: 14px; justify-content: space-between; }
+    .brand { display: flex; align-items: center; gap: 10px; font-size: 20px; font-weight: 800; letter-spacing: -.04em; white-space: nowrap; }
+    .brand-mark { width: 34px; height: 34px; display: grid; place-items: center; border-radius: 12px; background: linear-gradient(145deg, #a9ceff, #568cf2); color: #101827; font-size: 16px; }
+    .top-actions { display: flex; gap: 8px; align-items: center; }
+    .ghost, .primary, .soft, .chip {
+      border: 1px solid var(--line); border-radius: 999px; padding: 9px 14px;
+      color: var(--text); background: var(--surface); font-weight: 650;
+    }
+    .ghost { background: transparent; }
+    .primary { background: var(--accent-strong); border-color: var(--accent-strong); color: white; }
+    .soft { background: var(--surface-2); }
+    button:disabled { opacity: .45; cursor: not-allowed; }
+    main { padding: 34px 0 60px; }
+    .intro { margin: 12px 0 24px; }
+    .eyebrow { color: var(--accent); text-transform: uppercase; font-size: 11px; font-weight: 800; letter-spacing: .16em; }
+    h1 { font-size: clamp(27px, 6vw, 42px); line-height: 1.15; letter-spacing: -.04em; margin: 8px 0; }
+    .sub { color: var(--muted); margin: 0; font-size: 14px; }
+    .searchbar { display: flex; gap: 9px; margin: 22px 0 12px; }
+    .searchbar input {
+      min-width: 0; flex: 1; height: 52px; padding: 0 17px; border-radius: 15px;
+      border: 1px solid var(--line); outline: none; background: #171c25; color: var(--text);
+    }
+    input:focus { border-color: var(--accent-strong); box-shadow: 0 0 0 3px rgba(77,141,245,.16); }
+    .searchbar button { min-width: 92px; border-radius: 15px; }
+    .hint { font-size: 12px; color: var(--muted); }
+    .notice { border: 1px solid rgba(156,196,255,.25); background: rgba(76,121,190,.10); color: #d9e7ff; border-radius: 14px; padding: 12px 14px; font-size: 13px; margin: 16px 0; }
+    .settings {
+      display: none; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius);
+      padding: 17px; margin: 18px 0;
+    }
+    .settings.open { display: block; }
+    .settings h2 { font-size: 17px; margin: 0 0 6px; }
+    .settings p { color: var(--muted); font-size: 13px; margin: 0 0 12px; }
+    .key-row { display: flex; gap: 8px; }
+    .key-row input { min-width: 0; flex: 1; background: #10141b; color: var(--text); border: 1px solid var(--line); border-radius: 12px; padding: 12px; }
+    .key-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+    .status { min-height: 22px; margin: 12px 0; color: var(--muted); font-size: 13px; }
+    .status.error { color: var(--danger); }
+    .status.good { color: #9ee0b1; }
+    .section-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 26px 0 13px; }
+    .section-head h2 { font-size: 19px; margin: 0; }
+    .count { color: var(--muted); font-size: 12px; }
+    .layout { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(260px, .85fr); gap: 24px; align-items: start; }
+    .player-card, .side-card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
+    .player-frame { background: #050608; aspect-ratio: 16 / 9; min-height: 200px; display: grid; place-items: center; }
+    .player-frame iframe { display: block; width: 100%; height: 100%; min-height: 200px; border: 0; }
+    .player-placeholder { color: #8792a3; text-align: center; padding: 25px; }
+    .play-icon { width: 54px; height: 54px; border: 1px solid #4b596c; border-radius: 50%; margin: 0 auto 12px; display: grid; place-items: center; font-size: 20px; color: var(--accent); }
+    .player-meta { padding: 16px; }
+    .player-meta h2 { font-size: 17px; line-height: 1.45; margin: 0 0 5px; }
+    .player-meta p { color: var(--muted); margin: 0; font-size: 13px; }
+    .player-links { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 13px; }
+    .player-links a { font-size: 12px; text-decoration: none; border: 1px solid var(--line); border-radius: 999px; padding: 7px 11px; }
+    .side-card { padding: 15px; }
+    .side-card h3 { font-size: 16px; margin: 0 0 5px; }
+    .side-card p { margin: 0; color: var(--muted); font-size: 12px; }
+    .related-list { display: grid; gap: 10px; margin-top: 13px; }
+    .related-item { display: grid; grid-template-columns: 112px 1fr; gap: 10px; align-items: start; cursor: pointer; text-align: left; border: 0; color: inherit; background: transparent; padding: 0; }
+    .related-item img { width: 112px; aspect-ratio: 16/9; object-fit: cover; border-radius: 9px; background: #090b0f; }
+    .related-item strong { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; font-size: 12px; line-height: 1.45; }
+    .related-item span { color: var(--muted); font-size: 11px; display: block; margin-top: 4px; }
+    .results { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 17px; }
+    .video-card { min-width: 0; border: 1px solid var(--line); background: var(--surface); border-radius: 15px; overflow: hidden; cursor: pointer; text-align: left; color: inherit; padding: 0; transition: transform .15s ease, border-color .15s ease; }
+    .video-card:hover { transform: translateY(-2px); border-color: #627b9e; }
+    .video-card img { display: block; width: 100%; aspect-ratio: 16/9; object-fit: cover; background: #07090d; }
+    .video-info { padding: 11px 12px 13px; }
+    .video-info strong { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; font-size: 13px; line-height: 1.45; min-height: 38px; }
+    .video-info span { display: block; margin-top: 6px; color: var(--muted); font-size: 11px; overflow-wrap: anywhere; }
+    .empty { border: 1px dashed #465164; border-radius: 16px; padding: 24px; color: var(--muted); text-align: center; grid-column: 1 / -1; font-size: 14px; }
+    .load-wrap { text-align: center; margin: 22px 0 0; }
+    footer { color: var(--muted); text-align: center; border-top: 1px solid var(--line); padding: 20px 8px 0; font-size: 11px; }
+    footer a { color: var(--muted); }
+    @media (max-width: 760px) {
+      .shell { width: min(100% - 22px, 620px); }
+      main { padding-top: 25px; }
+      .layout { grid-template-columns: 1fr; }
+      .results { grid-template-columns: repeat(2, minmax(0,1fr)); gap: 11px; }
+      .video-info { padding: 9px; }
+      .video-info strong { font-size: 12px; }
+      .related-item { grid-template-columns: 104px 1fr; }
+      .related-item img { width: 104px; }
+    }
+    @media (max-width: 390px) {
+      .brand { font-size: 17px; }
+      .topbar { gap: 7px; }
+      .ghost { padding: 8px 10px; font-size: 12px; }
+      .searchbar { gap: 6px; }
+      .searchbar button { min-width: 76px; padding-inline: 10px; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="shell topbar">
+      <div class="brand"><span class="brand-mark">▶</span><span>Clipbox</span></div>
+      <div class="top-actions">
+        <button class="ghost" id="settingsToggle" type="button">APIキー設定</button>
+        <a class="ghost" href="https://www.youtube.com/" target="_blank" rel="noopener noreferrer" style="text-decoration:none">YouTube ↗</a>
+      </div>
+    </div>
+  </header>
+
+  <main class="shell">
+    <section class="intro">
+      <div class="eyebrow">Find something to watch</div>
+      <h1>見たい動画を、ここから。</h1>
+      <p class="sub">キーワードでYouTube動画を検索して、このページ内で再生できます。</p>
+      <form class="searchbar" id="searchForm">
+        <input id="searchInput" type="search" maxlength="100" placeholder="例：サカナクション、料理、勉強用BGM" autocomplete="off" aria-label="動画を検索">
+        <button class="primary" id="searchButton" type="submit">検索する</button>
+      </form>
+      <div class="hint">検索結果はYouTubeから取得します。動画の再生にはYouTube公式プレイヤーを使用します。</div>
+    </section>
+
+    <section class="settings" id="settingsPanel" aria-label="APIキー設定">
+      <h2>YouTube APIキーの設定</h2>
+      <p>Google Cloudで作成したYouTube Data API v3のAPIキーを入力してください。キーはこのブラウザのローカルストレージに保存され、GitHubのコードには書き込まれません。</p>
+      <div class="key-row">
+        <input id="apiKeyInput" type="password" placeholder="AIza..." autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="YouTube APIキー">
+      </div>
+      <div class="key-actions">
+        <button class="primary" id="saveKeyButton" type="button">この端末に保存</button>
+        <button class="soft" id="removeKeyButton" type="button">保存したキーを削除</button>
+      </div>
+      <p style="margin-top:12px">APIキーは利用時にGoogleへ送信されます。Google Cloudで「YouTube Data API v3」のみにAPI制限し、ウェブサイトのHTTPリファラー制限も設定してください。キーを他人に共有しないでください。</p>
+      <p><a href="https://console.cloud.google.com/apis/library/youtube.googleapis.com" target="_blank" rel="noopener noreferrer">Google CloudでYouTube Data API v3を有効にする ↗</a></p>
+    </section>
+
+    <div class="notice" id="keyNotice">最初に「APIキー設定」からYouTube Data API v3のキーを登録してください。まだキーがない場合は、下の説明を見ながら作成できます。</div>
+    <div class="status" id="status" role="status" aria-live="polite"></div>
+
+    <section class="layout" aria-label="動画プレイヤーと関連動画">
+      <div class="player-card">
+        <div class="player-frame" id="playerFrame">
+          <div class="player-placeholder"><div class="play-icon">▶</div><strong>動画を選ぶと、ここで再生されます</strong><div style="font-size:12px;margin-top:6px">上の検索欄から動画を探してみてください</div></div>
+        </div>
+        <div class="player-meta">
+          <h2 id="playingTitle">まだ動画が選択されていません</h2>
+          <p id="playingChannel">検索結果から動画を選択してください。</p>
+          <div class="player-links" id="playerLinks" hidden></div>
+        </div>
+      </div>
+      <aside class="side-card">
+        <h3>関連動画</h3>
+        <p id="relatedDescription">動画を選ぶと、タイトルやチャンネル名をもとに関連キーワードで検索できます。</p>
+        <div class="related-list" id="relatedList"><div class="hint">再生する動画を選択してください。</div></div>
+      </aside>
+    </section>
+
+    <section>
+      <div class="section-head">
+        <h2 id="resultsHeading">動画を検索してみよう</h2>
+        <span class="count" id="resultCount"></span>
+      </div>
+      <div class="results" id="resultsGrid">
+        <div class="empty">検索欄にキーワードを入力して「検索する」を押してください。</div>
+      </div>
+      <div class="load-wrap"><button class="soft" id="loadMoreButton" type="button" hidden>さらに読み込む</button></div>
+    </section>
+
+    <footer>
+      <p>Clipboxは個人制作の動画検索ページです。YouTubeの公式アプリ・公式サービスではありません。</p>
+      <p>動画・サムネイル・チャンネル情報はYouTubeから取得されます。再生はYouTube公式プレイヤーで行われます。</p>
+      <p><a href="https://www.youtube.com/t/terms" target="_blank" rel="noopener noreferrer">YouTube利用規約</a> ・ <a href="https://developers.google.com/youtube/terms/api-services-terms-of-service" target="_blank" rel="noopener noreferrer">YouTube API利用規約</a></p>
+    </footer>
+  </main>
+
+  <script>
+    'use strict';
+
+    const API_URL = 'https://www.googleapis.com/youtube/v3/search';
+    const STORAGE_KEY = 'clipbox_youtube_api_key_v1';
+    const state = {
+      apiKey: localStorage.getItem(STORAGE_KEY) || '',
+      nextPageToken: '',
+      currentQuery: '',
+      currentVideo: null,
+      loading: false,
+      cache: new Map()
+    };
+
+    const $ = (id) => document.getElementById(id);
+    const statusEl = $('status');
+    const keyNotice = $('keyNotice');
+
+    function setStatus(message, kind = '') {
+      statusEl.textContent = message;
+      statusEl.className = `status ${kind}`.trim();
+    }
+
+    function updateKeyNotice() {
+      if (state.apiKey) {
+        keyNotice.textContent = 'APIキーがこの端末のブラウザに保存されています。検索を始められます。';
+        keyNotice.style.borderColor = 'rgba(110,210,150,.35)';
+        keyNotice.style.background = 'rgba(50,130,85,.12)';
+      } else {
+        keyNotice.textContent = '最初に「APIキー設定」からYouTube Data API v3のキーを登録してください。';
+        keyNotice.style.borderColor = '';
+        keyNotice.style.background = '';
+      }
+    }
+
+    function setLoading(isLoading) {
+      state.loading = isLoading;
+      $('searchButton').disabled = isLoading;
+      $('loadMoreButton').disabled = isLoading;
+      $('searchButton').textContent = isLoading ? '検索中…' : '検索する';
+      $('loadMoreButton').textContent = isLoading ? '読み込み中…' : 'さらに読み込む';
+    }
+
+    function showEmpty(message, container = $('resultsGrid')) {
+      container.replaceChildren();
+      const box = document.createElement('div');
+      box.className = 'empty';
+      box.textContent = message;
+      container.appendChild(box);
+    }
+
+    function makeThumbnail(item) {
+      const thumbnails = item.snippet?.thumbnails || {};
+      return thumbnails.medium?.url || thumbnails.high?.url || thumbnails.default?.url || '';
+    }
+
+    function createVideoCard(item) {
+      const videoId = item.id?.videoId;
+      if (!videoId || !item.snippet) return null;
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'video-card';
+      button.setAttribute('aria-label', `${item.snippet.title}を再生`);
+
+      const image = document.createElement('img');
+      image.src = makeThumbnail(item);
+      image.alt = '';
+      image.loading = 'lazy';
+      image.referrerPolicy = 'strict-origin-when-cross-origin';
+
+      const info = document.createElement('div');
+      info.className = 'video-info';
+      const title = document.createElement('strong');
+      title.textContent = item.snippet.title || 'タイトル不明';
+      const channel = document.createElement('span');
+      channel.textContent = item.snippet.channelTitle || 'チャンネル不明';
+      info.append(title, channel);
+      button.append(image, info);
+      button.addEventListener('click', () => selectVideo(item));
+      return button;
+    }
+
+    function createRelatedItem(item) {
+      const videoId = item.id?.videoId;
+      if (!videoId || !item.snippet) return null;
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'related-item';
+      const image = document.createElement('img');
+      image.src = makeThumbnail(item);
+      image.alt = '';
+      image.loading = 'lazy';
+      const text = document.createElement('div');
+      const title = document.createElement('strong');
+      title.textContent = item.snippet.title || 'タイトル不明';
+      const channel = document.createElement('span');
+      channel.textContent = item.snippet.channelTitle || 'チャンネル不明';
+      text.append(title, channel);
+      button.append(image, text);
+      button.addEventListener('click', () => selectVideo(item));
+      return button;
+    }
+
+    function renderResults(items, append = false) {
+      const grid = $('resultsGrid');
+      if (!append) grid.replaceChildren();
+      let added = 0;
+      for (const item of items || []) {
+        const card = createVideoCard(item);
+        if (card) { grid.appendChild(card); added += 1; }
+      }
+      if (!append && added === 0) showEmpty('動画が見つかりませんでした。別のキーワードで検索してみてください。');
+      const total = grid.querySelectorAll('.video-card').length;
+      $('resultCount').textContent = total ? `${total}件表示中` : '';
+    }
+
+    function parseApiError(data, response) {
+      const reason = data?.error?.errors?.[0]?.reason || '';
+      if (reason === 'keyInvalid' || response.status === 400) return 'APIキーが正しくない可能性があります。「APIキー設定」から確認してください。';
+      if (reason === 'quotaExceeded' || reason === 'dailyLimitExceeded') return 'YouTube APIの1日の検索上限に達したようです。上限が戻ってから試してください。';
+      if (reason === 'accessNotConfigured') return 'Google Cloudで「YouTube Data API v3」が有効になっていません。APIを有効にしてください。';
+      if (response.status === 403) return 'APIの利用が許可されませんでした。APIキーの制限設定や利用上限を確認してください。';
+      return data?.error?.message || `検索に失敗しました（HTTP ${response.status}）。`;
+    }
+
+    async function searchYouTube(query, pageToken = '') {
+      if (!state.apiKey) {
+        $('settingsPanel').classList.add('open');
+        setStatus('先にYouTube APIキーを登録してください。', 'error');
+        return null;
+      }
+      const cacheKey = `${query}::${pageToken}`;
+      if (state.cache.has(cacheKey)) return state.cache.get(cacheKey);
+
+      const params = new URLSearchParams({
+        part: 'snippet',
+        type: 'video',
+        q: query,
+        maxResults: '12',
+        videoEmbeddable: 'true',
+        safeSearch: 'moderate',
+        regionCode: 'JP',
+        relevanceLanguage: 'ja',
+        key: state.apiKey
+      });
+      if (pageToken) params.set('pageToken', pageToken);
+
+      const response = await fetch(`${API_URL}?${params.toString()}`);
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok || data.error) throw new Error(parseApiError(data, response));
+      const result = { items: data.items || [], nextPageToken: data.nextPageToken || '' };
+      state.cache.set(cacheKey, result);
+      return result;
+    }
+
+    async function runSearch(query, pageToken = '', append = false) {
+      const cleanQuery = query.trim();
+      if (!cleanQuery) { setStatus('検索キーワードを入力してください。', 'error'); return; }
+      if (state.loading) return;
+      if (!append) {
+        state.currentQuery = cleanQuery;
+        state.nextPageToken = '';
+        $('resultsHeading').textContent = `「${cleanQuery}」の検索結果`;
+        showEmpty('検索しています…');
+      }
+      setLoading(true);
+      setStatus('YouTubeから動画を検索しています…');
+      try {
+        const result = await searchYouTube(cleanQuery, pageToken);
+        if (!result) return;
+        renderResults(result.items, append);
+        state.nextPageToken = result.nextPageToken;
+        $('loadMoreButton').hidden = !state.nextPageToken;
+        setStatus('検索が完了しました。動画を選ぶとこのページ内で再生できます。', 'good');
+      } catch (error) {
+        if (!append) showEmpty('検索結果を表示できませんでした。');
+        setStatus(error.message || '予期しないエラーが発生しました。', 'error');
+        $('loadMoreButton').hidden = true;
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    function relatedQueryFor(video) {
+      // YouTube公式の関連動画一覧ではなく、タイトルとチャンネル名による再検索です。
+      const title = (video.snippet?.title || '').replace(/[【】\[\]()（）「」『』]/g, ' ').replace(/\s+/g, ' ').trim();
+      const channel = (video.snippet?.channelTitle || '').trim();
+      const query = `${title} ${channel}`.trim();
+      return query.slice(0, 90);
+    }
+
+    async function loadRelated(video) {
+      const list = $('relatedList');
+      showEmpty('関連キーワードで検索しています…', list);
+      $('relatedDescription').textContent = '動画のタイトル・チャンネル名を使って、似たテーマの動画を探しています。';
+      try {
+        const query = relatedQueryFor(video);
+        const result = await searchYouTube(query);
+        if (!result) return;
+        list.replaceChildren();
+        const related = result.items.filter(item => item.id?.videoId !== video.id?.videoId).slice(0, 6);
+        for (const item of related) {
+          const element = createRelatedItem(item);
+          if (element) list.appendChild(element);
+        }
+        if (!list.children.length) showEmpty('関連する動画が見つかりませんでした。', list);
+        $('relatedDescription').textContent = 'タイトル・チャンネル名で再検索した候補です（YouTube公式の個人向けおすすめとは異なります）。';
+      } catch (error) {
+        showEmpty('関連動画を読み込めませんでした。', list);
+        $('relatedDescription').textContent = error.message;
+      }
+    }
+
+    function selectVideo(item) {
+      const videoId = item.id?.videoId;
+      const snippet = item.snippet;
+      if (!videoId || !snippet) return;
+      state.currentVideo = item;
+      const frame = $('playerFrame');
+      frame.replaceChildren();
+      const iframe = document.createElement('iframe');
+      iframe.src = `https://www.youtube-nocookie.com/embed/${encodeURIComponent(videoId)}?playsinline=1&rel=0`;
+      iframe.title = snippet.title || 'YouTube video player';
+      iframe.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share';
+      iframe.referrerPolicy = 'strict-origin-when-cross-origin';
+      iframe.allowFullscreen = true;
+      frame.appendChild(iframe);
+
+      $('playingTitle').textContent = snippet.title || 'タイトル不明';
+      $('playingChannel').textContent = snippet.channelTitle || 'チャンネル不明';
+      const links = $('playerLinks');
+      links.replaceChildren();
+      const openLink = document.createElement('a');
+      openLink.href = `https://www.youtube.com/watch?v=${encodeURIComponent(videoId)}`;
+      openLink.target = '_blank';
+      openLink.rel = 'noopener noreferrer';
+      openLink.textContent = 'YouTubeで開く ↗';
+      links.appendChild(openLink);
+      links.hidden = false;
+      loadRelated(item);
+      setStatus('動画を選択しました。再生できない動画はYouTube側の設定で埋め込みが制限されている場合があります。', 'good');
+      if (window.matchMedia('(max-width: 760px)').matches) {
+        $('playerFrame').scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }
+
+    $('settingsToggle').addEventListener('click', () => {
+      $('settingsPanel').classList.toggle('open');
+      if (state.apiKey) $('apiKeyInput').value = state.apiKey;
+    });
+
+    $('saveKeyButton').addEventListener('click', () => {
+      const key = $('apiKeyInput').value.trim();
+      if (!key) { setStatus('APIキーを入力してください。', 'error'); return; }
+      state.apiKey = key;
+      localStorage.setItem(STORAGE_KEY, key);
+      state.cache.clear();
+      updateKeyNotice();
+      setStatus('APIキーをこの端末に保存しました。検索できます。', 'good');
+      $('settingsPanel').classList.remove('open');
+    });
+
+    $('removeKeyButton').addEventListener('click', () => {
+      state.apiKey = '';
+      localStorage.removeItem(STORAGE_KEY);
+      $('apiKeyInput').value = '';
+      state.cache.clear();
+      updateKeyNotice();
+      setStatus('保存していたAPIキーを削除しました。', 'good');
+    });
+
+    $('searchForm').addEventListener('submit', (event) => {
+      event.preventDefault();
+      runSearch($('searchInput').value);
+    });
+
+    $('loadMoreButton').addEventListener('click', () => {
+      if (state.nextPageToken) runSearch(state.currentQuery, state.nextPageToken, true);
+    });
+
+    updateKeyNotice();
+    if (state.apiKey) $('apiKeyInput').value = state.apiKey;
+  </script>
+</body>
+</html>
